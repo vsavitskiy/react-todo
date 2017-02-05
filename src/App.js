@@ -1,8 +1,17 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import {TodoForm, TodoList} from './components/todo/';
-import {addTodo, generateId} from './lib/todoHelpers';
+import {TodoForm, TodoList, Footer} from './components/todo/';
+import {
+          addTodo,
+          generateId,
+          findById,
+          toggleTodo,
+          updateTodo,
+          removeTodo,
+          filterTodos } from './lib/todoHelpers';
+
+import {partial, pipe} from './lib/utils';
 
 
 class App extends Component {
@@ -15,6 +24,29 @@ class App extends Component {
     currentTodo: '',
     errorMessage: ''
   };
+
+  static contextTypes = {
+    route: React.PropTypes.string
+  };
+
+  handleToggle(id) {
+    const getUpdatedTodos = pipe(findById, toggleTodo, partial(updateTodo, this.state.todos));
+    const updatedTodos = getUpdatedTodos(id, this.state.todos);
+
+    this.setState({
+      todos: updatedTodos
+    })
+  }
+
+  handleRemove(id, e) {
+    e.preventDefault();
+
+    const updatedTodos = removeTodo(this.state.todos, id);
+
+    this.setState({
+      todos: updatedTodos
+    });
+  }
 
   handleSubmit(e) {
     e.preventDefault();
@@ -50,6 +82,7 @@ class App extends Component {
 
   render() {
     const submitHandler = this.state.currentTodo ? ::this.handleSubmit : ::this.handleEmptySubmit;
+    const displayTodos = filterTodos(this.state.todos, this.context.route);
 
     return (
       <div className="App">
@@ -59,10 +92,15 @@ class App extends Component {
         </div>
         <div className="Todo-App">
           {this.state.errorMessage && <span className="error">{this.state.errorMessage}</span>}
+
           <TodoForm handleInputChange={::this.handleInputChange}
-            currentTodo={this.state.currentTodo}
-            handleSubmit={submitHandler} />
-          <TodoList todos={this.state.todos} />
+                    currentTodo={this.state.currentTodo}
+                    handleSubmit={submitHandler} />
+
+          <TodoList handleRemove={::this.handleRemove}
+                    handleToggle={::this.handleToggle}
+                    todos={displayTodos} />
+          <Footer/>
         </div>
       </div>
     );
