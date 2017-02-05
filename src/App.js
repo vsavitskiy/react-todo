@@ -12,15 +12,12 @@ import {
           filterTodos } from './lib/todoHelpers';
 
 import {partial, pipe} from './lib/utils';
+import {loadTodos, createTodo, saveTodo, destroyTodo} from './lib/todoService';
 
 
 class App extends Component {
   state = {
-    todos: [
-      {id: 1, name: 'Learn JSX', isComplete: true},
-      {id: 2, name: 'Build an Awesome App', isComplete: false},
-      {id: 3, name: 'Ship it!', isComplete: false},
-    ],
+    todos: [],
     currentTodo: '',
     errorMessage: ''
   };
@@ -29,13 +26,23 @@ class App extends Component {
     route: React.PropTypes.string
   };
 
+  componentDidMount() {
+    loadTodos()
+      .then(todos => this.setState({todos}));
+  }
+
   handleToggle(id) {
-    const getUpdatedTodos = pipe(findById, toggleTodo, partial(updateTodo, this.state.todos));
-    const updatedTodos = getUpdatedTodos(id, this.state.todos);
+    const getToggledTodo = pipe(findById, toggleTodo);
+    const updated = getToggledTodo(id, this.state.todos);
+    const getUpdatedTodos = partial(updateTodo, this.state.todos);
+    const updatedTodos = getUpdatedTodos(updated);
 
     this.setState({
       todos: updatedTodos
-    })
+    });
+
+    saveTodo(updated)
+      .then(() => this.showTempMessage('Todo updated'))
   }
 
   handleRemove(id, e) {
@@ -46,6 +53,9 @@ class App extends Component {
     this.setState({
       todos: updatedTodos
     });
+
+    destroyTodo(id)
+      .then(() => this.showTempMessage('Todo removed'));
   }
 
   handleSubmit(e) {
@@ -57,14 +67,20 @@ class App extends Component {
       name: this.state.currentTodo,
       isComplete: false
     };
-
     const updatedTodos = addTodo(this.state.todos, newTodo);
-
     this.setState({
       todos: updatedTodos,
       currentTodo: '',
       errorMessage: ''
     });
+
+    createTodo(newTodo)
+      .then(() => this.showTempMessage('Todo added'));
+  }
+
+  showTempMessage(msg) {
+    this.setState({message: msg});
+    setTimeout(() => this.setState({message: ''}), 2500);
   }
 
   handleEmptySubmit(e) {
@@ -88,10 +104,11 @@ class App extends Component {
       <div className="App">
         <div className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
+          <h2>React Todos</h2>
         </div>
         <div className="Todo-App">
           {this.state.errorMessage && <span className="error">{this.state.errorMessage}</span>}
+          {this.state.message && <span className="success">{this.state.message}</span>}
 
           <TodoForm handleInputChange={::this.handleInputChange}
                     currentTodo={this.state.currentTodo}

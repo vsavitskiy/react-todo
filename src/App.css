@@ -47,6 +47,10 @@ li {
   color: red;
 }
 
+.success {
+  color: green;
+}
+
 .delete-item {
   text-decoration: none;
   visibility: hidden;
